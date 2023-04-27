@@ -1,0 +1,42 @@
+﻿@model IEnumerable<Poster.Models.Posts>
+@{
+    ViewData["Title"] = "ShowListPosts";
+}
+
+<h1>ShowListPosts</h1>
+
+<p>
+    <a asp-action="CreatePosts">Create New</a>
+</p>
+<p>
+   Có tất cả: @ViewBag.TotalPost bài viết
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Title)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Published)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Published)
+            </td>
+            <td>
+                @Html.ActionLink("Details", "Details", new {  id=item.ID  })
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+<partial name="_Paging" model="@ViewBag.Paging" /> @*gọi view_paging*@

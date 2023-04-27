@@ -1,0 +1,55 @@
+﻿@model Poster.Models.Posts
+
+@{
+    ViewData["Title"] = "CreatePosts";
+}
+
+<h1>CreatePosts</h1>
+
+<h4>Posts</h4>
+<hr />
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="CreatePosts" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Title" class="control-label"></label>
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Content" class="control-label"></label>
+                <textarea asp-for="Content" id="summernote" ></textarea>
+                <span asp-validation-for="Content" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+<script src="~lib\summernote\summernote-bs4.min.js"></script>       @* Sử dụng*@
+<link rel="stylesheet"href="~lib\summernote\summernote-bs4.min.css" />      @* Sử dụng + tải file ~wwwroot\lib\summernote\ *@ 
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+<script>    /*sử dụng*/
+ $('#summernote').summernote({
+        placeholder: 'Nhập nội dung',
+        tabsize: 5,
+        height: 300,
+        toolbar: [
+          ['style', ['style']],
+          ['font', ['bold', 'underline', 'clear']],
+          ['color', ['color']],
+          ['para', ['ul', 'ol', 'paragraph']],
+          ['table', ['table']],
+          ['insert', ['link', 'picture', 'video']],
+          ['view', ['fullscreen', 'codeview', 'help']]
+        ]
+      });
+</script>

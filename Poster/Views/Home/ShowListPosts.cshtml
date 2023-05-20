@@ -9,8 +9,78 @@
     <a asp-action="CreatePosts">Create New</a>
 </p>
 <p>
-   Có tất cả: @ViewBag.TotalPost bài viết
+   Tồn tại: @ViewBag.TotalPost bài viết
 </p>
+<!-- Ô tìm kiếm -->
+<form method="get" action="@Url.Action("ShowListPosts")">
+	<div class="row">
+		<div class="col-md-10">
+			<ul class="list-inline">
+				<li class="list-inline-item mr-3 dropdown">
+				<li class="list-inline-item mr-3 dropdown">
+					title
+						@Html.DropDownList("title", new SelectList(new List<SelectListItem>
+					{
+					new SelectListItem { Value = "1", Text = "1" },
+					new SelectListItem { Value = "2", Text = "2" },
+					new SelectListItem { Value = "3", Text = "3" }
+					}, "Value", "Text", (string)ViewData["content"]),new { @class = "form-control" })
+				</li>
+				</li>
+				<li class="list-inline-item mr-3 dropdown">
+					content
+					@Html.DropDownList("content", new SelectList(new List<SelectListItem>
+					{
+					new SelectListItem { Value = "1", Text = "1" },
+					new SelectListItem { Value = "2", Text = "2" },
+					new SelectListItem { Value = "3", Text = "3" }
+					}, "Value", "Text", (string)ViewData["content"]),new { @class = "form-control"/* , multiple = "multiple"*/})
+				</li>
+				<li class="list-inline-item mr-3 dropdown">
+					<div class="dropdown">
+						<button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+							Title 1
+						</button>
+						<div class="dropdown-menu">
+							<a class="dropdown-item" href="?title=1&content=1">1</a>
+							<a class="dropdown-item" href="?title=2&content=1">2</a>
+							<a class="dropdown-item" href="?title=3&content=1">3</a>
+						</div>
+					</div>
+				</li>
+				<li class="list-inline-item mr-3">
+					<div class="form-inline">
+						<label class="mr-2">Price</label>
+						<input class="form-control form-control-sm" placeholder="Min" min="0" name="minprice" type="number" value="@ViewData["minprice"]">
+						<span class="px-2"> - </span>
+						<input class="form-control form-control-sm" placeholder="Max" min="0" name="maxprice" type="number" value="@ViewData["maxprice"]">
+					</div>
+
+				</li>
+				<li class="list-inline-item mr-3 dropdown">
+					orderby DROPDOWNLIST
+					@Html.DropDownList("orderby", new SelectList(new List<SelectListItem>
+					{
+					new SelectListItem { Value = "ASC", Text = "ASC" },
+					new SelectListItem { Value = "DESC", Text = "DESC" },
+					}, "Value", "Text", (string)ViewData["content"]),new { @class = "form-control"})
+				</li>
+@*				<li>
+					orderby SELECT
+					<select name="orderby"  class="mr-2 form-control">
+						<option value="ASC">ASC</option>
+						<option value="DESC">DESC</option>
+					</select>
+				</li>*@
+				<li>
+					<input type="submit"  class="btn btn-outline-success" value="Submit">
+				</li>
+			</ul>
+		</div> <!-- col.// -->
+	</div> <!-- row.// -->
+	<input type="text" name="searchKeyword" value="@ViewData["searchKeyword"]" />
+	
+</form>
 <table class="table">
     <thead>
         <tr>
@@ -39,4 +109,11 @@
 }
     </tbody>
 </table>
-<partial name="_Paging" model="@ViewBag.Paging" /> @*gọi view_paging*@
+<partial name="_Paging" model="@ViewBag.Paging" /> 
+@*<script>
+	var selectElement = document.getElementsByName("orderby")[0];
+	selectElement.addEventListener("change", function () {
+		selectElement.form.submit();
+
+	});
+</script>*@

@@ -14,9 +14,10 @@ namespace Poster.Models
         {
         }
         public DbSet<Posts> Posts { get; set; }
+        public DbSet<User> Users { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(@"Data Source=TRUNG2701\SQLEXPRESS;Initial Catalog=Demo_Posts;Integrated Security=True;Connection Timeout=36000");// \SQLEXPRESS
+            optionsBuilder.UseSqlServer(@"Data Source=TRUNG2701\SQLEXPRESS;Initial Catalog=Demo_Poster;Integrated Security=True;Connection Timeout=36000");// \SQLEXPRESS
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

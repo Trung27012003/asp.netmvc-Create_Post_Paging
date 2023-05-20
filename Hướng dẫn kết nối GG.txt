@@ -1,0 +1,72 @@
+-- cài nuget: Microsoft.AspNetCore.Authentication.Google (6.0.13)
+-- Cấu hình ở appsetting
+"Authentication": {
+    "Google": {
+      "ClientId": "50097865817-qbjiplspfi5tgake8kuquieq757t8ub0.apps.googleusercontent.com",
+      "ClientSecret": "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"
+    }
+  }
+-- Cấu hình ở program
+builder.Services.AddAuthentication(options =>
+{
+	options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+	options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+})
+			.AddCookie()
+			.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+			{
+				options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+				options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+				options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
+                options.CallbackPath = "/login-google";
+            });
+builder.Services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+-- Action đăng nhập ở controller
+        public async Task LoginGG() // chuyển hướng đến trang đăng nhập google
+        {
+            await HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme, new AuthenticationProperties()
+            {
+                RedirectUri = Url.Action("GoogleResponse")
+            });
+        }
+
+        public async Task<IActionResult> GoogleResponse()// trang đăng nhập google
+        {
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme); 
+            var claims = result.Principal.Identities .FirstOrDefault().Claims; // lấy thông tin người dùng
+
+            string email = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value; // lấy email
+            var acc = await _context.Users.ToListAsync();
+            var user = acc.FirstOrDefault(c => c.Email.ToLower() == email.ToLower());
+            if (user!=null)
+            {
+                if (user.IsConnectGooogle) // nếu tài khoản đã kết nối thì lấy id
+                {
+                    HttpContext.Session.SetString("userId", user.ID.ToString());
+                    return RedirectToAction("ShowListPosts");
+                }
+                else // nếu chưa kết nối thì kết nối, cần phải hỏi lại người dùng
+                {
+                    user.IsConnectGooogle = true;
+                     _context.Update(user);
+                    await _context.SaveChangesAsync();
+                    HttpContext.Session.SetString("userId", user.ID.ToString());
+                    return RedirectToAction("ShowListPosts"); 
+                }
+            }
+            else // nếu tài khoản chưa có thì chuyển hướng đến trang đăng kí
+            {
+                    string img = claims.FirstOrDefault(c => c.Type == "urn:google:picture")?.Value;
+                    string name = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
+                    HttpContext.Session.SetString("email", email);
+                    HttpContext.Session.SetString("img", img);
+                    HttpContext.Session.SetString("name", name);
+                    return RedirectToAction("SignUp");
+            }
+        }
+        public async Task<IActionResult> LogOut() // đăng xuất
+        {
+            await HttpContext.SignOutAsync();
+			return RedirectToAction("ShowListPosts");
+        }

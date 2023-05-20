@@ -1,4 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.EntityFrameworkCore;
 using Poster.Models;
 using System.Diagnostics;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -15,12 +20,16 @@ namespace Poster.Controllers
             _context = new Context();
         }
 
-         IActionResult Index()
-    {
+        public IActionResult Index()
+            {
 
-            return RedirectToAction("ShowListPosts");
-    }
-         public IActionResult ShowListPosts([FromQuery(Name = "page")]int CurrentPage, [FromQuery] string? searchKeyword, [FromQuery] string? title, [FromQuery] string? content, [FromQuery] string? orderby, [FromQuery] int? minprice, [FromQuery] int? maxprice)
+                    return View();
+            }
+        public async Task<IActionResult> ShowListUser()
+        {
+            return View(await _context.Users.ToListAsync());
+        }
+        public IActionResult ShowListPosts([FromQuery(Name = "page")]int CurrentPage, [FromQuery] string? searchKeyword, [FromQuery] string? title, [FromQuery] string? content, [FromQuery] string? orderby, [FromQuery] int? minprice, [FromQuery] int? maxprice)
          {
             // khi tìm mới thì reset lọc
 
@@ -139,6 +148,92 @@ namespace Poster.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+        [HttpPost]
+        public async Task<IActionResult> Login([FromForm] string Username, [FromForm] string Password)
+        {
+            var acc = await _context.Users.ToListAsync();
+            var user = acc.FirstOrDefault(c => c.Email == Username && c.Password == Password);
+            if (user != null)
+            {
+                HttpContext.Session.SetString("userId", user.ID.ToString());
+                return RedirectToAction("ShowListPosts");
+            }
+            return View();
+        }
+        public async Task LoginGG() // chuyển hướng đến trang đăng nhập google
+        {
+            await HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme, new AuthenticationProperties()
+            {
+                RedirectUri = Url.Action("GoogleResponse")
+            });
+        }
+
+        public async Task<IActionResult> GoogleResponse()// trang đăng nhập google
+        {
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme); 
+            var claims = result.Principal.Identities .FirstOrDefault().Claims; // lấy thông tin người dùng
+
+            string email = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value; // lấy email
+            var acc = await _context.Users.ToListAsync();
+            var user = acc.FirstOrDefault(c => c.Email.ToLower() == email.ToLower());
+            if (user!=null)
+            {
+                if (user.IsConnectGooogle) // nếu tài khoản đã kết nối thì lấy id
+                {
+                    HttpContext.Session.SetString("userId", user.ID.ToString());
+                    return RedirectToAction("ShowListPosts");
+                }
+                else // nếu chưa kết nối thì kết nối, cần phải hỏi lại người dùng
+                {
+                    user.IsConnectGooogle = true;
+                     _context.Update(user);
+                    await _context.SaveChangesAsync();
+                    HttpContext.Session.SetString("userId", user.ID.ToString());
+                    return RedirectToAction("ShowListPosts"); 
+                }
+            }
+            else // nếu tài khoản chưa có thì chuyển hướng đến trang đăng kí
+            {
+                    string img = claims.FirstOrDefault(c => c.Type == "urn:google:picture")?.Value;
+                    string name = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
+                    HttpContext.Session.SetString("email", email);
+                    HttpContext.Session.SetString("img", img);
+                    HttpContext.Session.SetString("name", name);
+                    return RedirectToAction("SignUp");
+            }
+        }
+        public async Task<IActionResult> LogOut()
+        {
+            await HttpContext.SignOutAsync();
+			return RedirectToAction("ShowListPosts");
+        }
+        public async Task<IActionResult> SignUp()
+        {
+            ViewBag.email = HttpContext.Session.GetString("email");
+            ViewBag.name = HttpContext.Session.GetString("name");
+
+            return View();
+        }
+        [HttpPost]
+        public async Task<IActionResult> SignUp([FromForm]string name, [FromForm] string email, [FromForm] string password)
+        {
+            if (name != null&& email != null && name != password)
+            {
+                var user = new User()
+                {
+                    Name = name,
+                    Email = email,
+                    Password = password,
+                    img="",
+                    IsConnectGooogle = true
+                    
+                };
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+                HttpContext.Session.SetString("userId", user.ID.ToString());
+            }
+            return RedirectToAction("ShowListPosts");
         }
     }
 }

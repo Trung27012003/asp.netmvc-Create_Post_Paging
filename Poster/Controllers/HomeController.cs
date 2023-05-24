@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using Poster.Models;
 using System.Diagnostics;
+using OfficeOpenXml;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Poster.Controllers
@@ -21,18 +22,17 @@ namespace Poster.Controllers
         }
 
         public IActionResult Index()
-            {
+        {
 
-                    return View();
-            }
+            return View();
+        }
         public async Task<IActionResult> ShowListUser()
         {
             return View(await _context.Users.ToListAsync());
         }
-        public IActionResult ShowListPosts([FromQuery(Name = "page")]int CurrentPage, [FromQuery] string? searchKeyword, [FromQuery] string? title, [FromQuery] string? content, [FromQuery] string? orderby, [FromQuery] int? minprice, [FromQuery] int? maxprice)
-         {
+        public IActionResult ShowListPosts([FromQuery(Name = "page")] int CurrentPage, [FromQuery] string? searchKeyword, [FromQuery] string? title, [FromQuery] string? content, [FromQuery] string? orderby, [FromQuery] int? minprice, [FromQuery] int? maxprice)
+        {
             // khi tìm mới thì reset lọc
-
             int PageSize = 10; // 10 items
             var post = _context.Posts.ToList(); // lấy list post
             title = title ?? "";
@@ -41,30 +41,30 @@ namespace Poster.Controllers
             {
                 post = post.Where(p => p.Title.Contains(searchKeyword)).ToList();
             }
-            if (title!=null) // check title
+            if (title != null) // check title
             {
                 post = post.Where(p => p.Title.Contains(title)).ToList();
-			}
-            if (content!=null) //check content
+            }
+            if (content != null) //check content
             {
                 post = post.Where(p => p.Content.Contains(content)).ToList();
-			}
-            if (minprice != null && maxprice!=null) // check minprice và maxprice
+            }
+            if (minprice != null && maxprice != null) // check minprice và maxprice
             {
                 post.Where(p => Int32.Parse(p.Title) <= maxprice && Int32.Parse(p.Title) >= minprice);
 
-			}
-			if (orderby == "ASC") 
-			{
-				post = post.OrderBy(c=>c.Title).ToList();
-			}
-			if (orderby == "DESC")
-			{
-				post = post.OrderByDescending(c => c.Title).ToList();
-			}
-			int TotalPost = post.Count(); // tổng số bài
-            int CountPages = (int)Math.Ceiling((double)TotalPost / PageSize); 
-            if (CurrentPage>CountPages)
+            }
+            if (orderby == "ASC")
+            {
+                post = post.OrderBy(c => c.Title).ToList();
+            }
+            if (orderby == "DESC")
+            {
+                post = post.OrderByDescending(c => c.Title).ToList();
+            }
+            int TotalPost = post.Count(); // tổng số bài
+            int CountPages = (int)Math.Ceiling((double)TotalPost / PageSize);
+            if (CurrentPage > CountPages)
             {
                 CurrentPage = CountPages;
             }
@@ -90,11 +90,11 @@ namespace Poster.Controllers
             ViewBag.Paging = Paging;
             ViewBag.TotalPost = TotalPost;
             ViewBag.orderby = orderby; // của select
-			ViewData["minprice"] = minprice;
-			ViewData["maxprice"] = maxprice;
-			ViewData["searchKeyword"] = searchKeyword;
-			var PostInPage = post.Skip((CurrentPage-1)*PageSize).Take(10).ToList();
-			return View(PostInPage);
+            ViewData["minprice"] = minprice;
+            ViewData["maxprice"] = maxprice;
+            ViewData["searchKeyword"] = searchKeyword;
+            var PostInPage = post.Skip((CurrentPage - 1) * PageSize).Take(10).ToList();
+            return View(PostInPage);
         }
 
         public IActionResult Them()
@@ -104,13 +104,13 @@ namespace Poster.Controllers
                 Posts p = new Posts()
                 {
                     Content = "Content thứ: " + i,
-                    Title =i.ToString(),
+                    Title = i.ToString(),
                     Published = true
                 };
                 _context.Posts.Add(p);
                 _context.SaveChanges();
             }
-           return RedirectToAction("ShowListPosts");
+            return RedirectToAction("ShowListPosts");
         }
         public IActionResult Xoa()
         {
@@ -171,13 +171,13 @@ namespace Poster.Controllers
 
         public async Task<IActionResult> GoogleResponse()// trang đăng nhập google
         {
-            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme); 
-            var claims = result.Principal.Identities .FirstOrDefault().Claims; // lấy thông tin người dùng
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var claims = result.Principal.Identities.FirstOrDefault().Claims; // lấy thông tin người dùng
 
             string email = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value; // lấy email
             var acc = await _context.Users.ToListAsync();
             var user = acc.FirstOrDefault(c => c.Email.ToLower() == email.ToLower());
-            if (user!=null)
+            if (user != null)
             {
                 if (user.IsConnectGooogle) // nếu tài khoản đã kết nối thì lấy id
                 {
@@ -187,26 +187,26 @@ namespace Poster.Controllers
                 else // nếu chưa kết nối thì kết nối, cần phải hỏi lại người dùng
                 {
                     user.IsConnectGooogle = true;
-                     _context.Update(user);
+                    _context.Update(user);
                     await _context.SaveChangesAsync();
                     HttpContext.Session.SetString("userId", user.ID.ToString());
-                    return RedirectToAction("ShowListPosts"); 
+                    return RedirectToAction("ShowListPosts");
                 }
             }
             else // nếu tài khoản chưa có thì chuyển hướng đến trang đăng kí
             {
-                    string img = claims.FirstOrDefault(c => c.Type == "urn:google:picture")?.Value;
-                    string name = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
-                    HttpContext.Session.SetString("email", email);
-                    HttpContext.Session.SetString("img", img);
-                    HttpContext.Session.SetString("name", name);
-                    return RedirectToAction("SignUp");
+                string img = claims.FirstOrDefault(c => c.Type == "urn:google:picture")?.Value;
+                string name = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
+                HttpContext.Session.SetString("email", email);
+                HttpContext.Session.SetString("img", img);
+                HttpContext.Session.SetString("name", name);
+                return RedirectToAction("SignUp");
             }
         }
-        public async Task<IActionResult> LogOut()
+        public async Task<IActionResult> LogOut() // đăng xuất
         {
             await HttpContext.SignOutAsync();
-			return RedirectToAction("ShowListPosts");
+            return RedirectToAction("ShowListPosts");
         }
         public async Task<IActionResult> SignUp()
         {
@@ -216,24 +216,53 @@ namespace Poster.Controllers
             return View();
         }
         [HttpPost]
-        public async Task<IActionResult> SignUp([FromForm]string name, [FromForm] string email, [FromForm] string password)
+        public async Task<IActionResult> SignUp([FromForm] string name, [FromForm] string email, [FromForm] string password)
         {
-            if (name != null&& email != null && name != password)
+            if (name != null && email != null && name != password)
             {
                 var user = new User()
                 {
                     Name = name,
                     Email = email,
                     Password = password,
-                    img="",
+                    img = "",
                     IsConnectGooogle = true
-                    
+
                 };
                 await _context.Users.AddAsync(user);
                 await _context.SaveChangesAsync();
                 HttpContext.Session.SetString("userId", user.ID.ToString());
             }
             return RedirectToAction("ShowListPosts");
+        }
+        public IActionResult ExportExcel()// cài nuget EPPlus   
+        {
+            
+            var data = _context.Posts.ToList();
+            var stream  = new MemoryStream();
+            using(var package = new ExcelPackage(stream))
+            {
+				var sheet = package.Workbook.Worksheets.Add("Danh sách post");
+                sheet.Cells[1,1].Value = "STT";
+                sheet.Cells[1,2].Value = "Tiêu đề";
+                sheet.Cells[1,3].Value = "Nội dung";
+                sheet.Cells[1,4].Value = "Trạng thái";
+                int stt = 1;
+                int rowIndex = 2;
+                foreach (var item in data)
+                {
+                    sheet.Cells[rowIndex, 1].Value = stt;
+                    sheet.Cells[rowIndex, 2].Value = item.Title;
+                    sheet.Cells[rowIndex, 3].Value = item.Content;
+                    sheet.Cells[rowIndex,4].Value = item.Published==true?"Đã xuất bản" : "Chưa xuất bản";
+					rowIndex++;
+					stt++;
+				}
+				package.Save();
+			}
+            stream.Position = 0;
+            var fileName = $"ListPost.xlsx";
+            return File(stream,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
     }
 }

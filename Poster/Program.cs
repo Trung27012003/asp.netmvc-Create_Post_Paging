@@ -20,6 +20,7 @@ builder.Services.AddAuthentication(options =>
 			{
 				options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
 				options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+				options.SaveTokens = true;
 				options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
                 options.CallbackPath = "/login-google";
             });
@@ -35,10 +36,13 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 
 app.UseRouting();
+
 app.UseSession();
+
 app.UseAuthorization();
 
 app.UseAuthentication();
